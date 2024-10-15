@@ -121,6 +121,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				path = "/" + path
 			}
 			parameters := swaggerParametersObject{}
+			gfolder := group.GetAnnotation("folder")
 
 			if countParams(path) > 0 {
 				p := strings.Split(path, "/")
@@ -308,6 +309,22 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 			// set OperationID
 			operationObject.OperationID = route.Handler
+			var (
+				rFolder    = ""
+				rStatus    = ""
+				rSourceUrl = ""
+				rPower     = ""
+			)
+			if route.AtDoc.Properties != nil {
+				rFolder = route.AtDoc.Properties["x_folder"]
+				rStatus = route.AtDoc.Properties["x_status"]
+				rSourceUrl = route.AtDoc.Properties["x_source_url"]
+				rPower = route.AtDoc.Properties["x_power"]
+			}
+			operationObject.XApifoxPower = gfolder + "/" + rFolder
+			operationObject.XApifoxStatus = rStatus
+			operationObject.XApifoxSourceurl = rSourceUrl
+			operationObject.XApifoxPower = rPower
 
 			for _, param := range operationObject.Parameters {
 				if param.Schema != nil && param.Schema.Ref != "" {

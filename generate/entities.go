@@ -137,11 +137,15 @@ type swaggerOperationObject struct {
 	RequestBody *struct {
 		Content swaggerContentObject `json:"content,omitempty"`
 	} `json:"requestBody,omitempty"`
-	Tags         []string                            `json:"tags,omitempty"`
-	Deprecated   bool                                `json:"deprecated,omitempty"`
-	Consumes     []string                            `json:"consumes,omitempty"`
-	Security     *[]swaggerSecurityRequirementObject `json:"security,omitempty"`
-	ExternalDocs *swaggerExternalDocumentationObject `json:"externalDocs,omitempty"`
+	Tags             []string                            `json:"tags,omitempty"`
+	Deprecated       bool                                `json:"deprecated,omitempty"`
+	Consumes         []string                            `json:"consumes,omitempty"`
+	Security         *[]swaggerSecurityRequirementObject `json:"security,omitempty"`
+	ExternalDocs     *swaggerExternalDocumentationObject `json:"externalDocs,omitempty"`
+	XApifoxFolder    string                              `json:"x-apifox-folder,omitempty"`
+	XApifoxStatus    string                              `json:"x-apifox-status,omitempty"`
+	XApifoxSourceurl string                              `json:"x-apifox-sourceurl,omitempty"`
+	XApifoxPower     string                              `json:"x-apifox-power,omitempty"`
 }
 
 type (

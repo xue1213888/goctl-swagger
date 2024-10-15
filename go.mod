@@ -1,6 +1,8 @@
 module github.com/zeromicro/goctl-swagger
 
-go 1.16
+go 1.21
+
+toolchain go1.23.1
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
