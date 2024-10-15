@@ -13,6 +13,11 @@ var (
 	version  = "20220621"
 	commands = []*cli.Command{
 		{
+			Name:   "power",
+			Usage:  "generates power.csv",
+			Action: action.PowerGenerate,
+		},
+		{
 			Name:   "swagger",
 			Usage:  "generates swagger.json",
 			Action: action.Generator,

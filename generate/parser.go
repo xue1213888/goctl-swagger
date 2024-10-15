@@ -216,7 +216,9 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 			}
 
 			desc := "response."
-			respSchema := schemaCore{}
+			respSchema := schemaCore{
+				Type: "object",
+			}
 			// respRef := swaggerSchemaObject{}
 			if route.ResponseType != nil && len(route.ResponseType.Name()) > 0 {
 				if strings.HasPrefix(route.ResponseType.Name(), "[][]") {
