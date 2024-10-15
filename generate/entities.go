@@ -37,6 +37,7 @@ var swaggerMapTypes = map[string]reflect.Kind{
 	"[]int32":  reflect.Slice,
 	"[]uint32": reflect.Slice,
 	"[]uint64": reflect.Slice,
+	"[]struct": reflect.Slice,
 	"bool":     reflect.Bool,
 	"*bool":    reflect.Bool,
 	"struct":   reflect.Struct,
@@ -146,6 +147,8 @@ type swaggerOperationObject struct {
 	XApifoxStatus    string                              `json:"x-apifox-status,omitempty"`
 	XApifoxSourceurl string                              `json:"x-apifox-sourceurl,omitempty"`
 	XApifoxPower     string                              `json:"x-apifox-power,omitempty"`
+	//XApifoxName       string                              `json:"x-apifox-name,omitempty"`
+	//XApifoxMaintainer string                              `json:"x-apifox-maintainer,omitempty"`
 }
 
 type (
@@ -185,8 +188,15 @@ type schemaCore struct {
 	// If the item is an enumeration include a list of all the *NAMES* of the
 	// enum values.  I'm not sure how well this will work but assuming all enums
 	// start from 0 index it will be great. I don't think that is a good assumption.
-	Enum    []string `json:"enum,omitempty"`
-	Default string   `json:"default,omitempty"`
+	Enum    []string      `json:"enum,omitempty"`
+	Default string        `json:"default,omitempty"`
+	XEnum   []XApifoxEnum `json:"x-apifox-enum,omitempty"`
+}
+
+type XApifoxEnum struct {
+	Value       string `json:"value"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type swaggerItemsObject schemaCore

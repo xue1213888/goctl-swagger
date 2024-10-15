@@ -215,38 +215,115 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				pathItemObject = swaggerPathItemObject{}
 			}
 
-			desc := "A successful response."
+			desc := "response."
 			respSchema := schemaCore{}
 			// respRef := swaggerSchemaObject{}
 			if route.ResponseType != nil && len(route.ResponseType.Name()) > 0 {
-				if strings.HasPrefix(route.ResponseType.Name(), "[]") {
-
+				if strings.HasPrefix(route.ResponseType.Name(), "[][]") {
 					refTypeName := strings.Replace(route.ResponseType.Name(), "[", "", 1)
 					refTypeName = strings.Replace(refTypeName, "]", "", 1)
-
 					respSchema.Type = "array"
 					respSchema.Items = &swaggerItemsObject{Ref: fmt.Sprintf("#/definitions/%s", refTypeName)}
+				} else if strings.HasPrefix(route.ResponseType.Name(), "[]") {
+					tempKind := swaggerMapTypes[strings.ReplaceAll(route.ResponseType.Name(), "[]", "")]
+					ftype, format, ok := primitiveSchema(tempKind, route.ResponseType.Name())
+					if ok {
+						respSchema.Type = "array"
+						respSchema.Items = &swaggerItemsObject{Type: ftype, Format: format}
+					} else {
+						refTypeName := strings.Replace(route.ResponseType.Name(), "[", "", 1)
+						refTypeName = strings.Replace(refTypeName, "]", "", 1)
+						respSchema.Type = "array"
+						respSchema.Items = &swaggerItemsObject{Ref: fmt.Sprintf("#/definitions/%s", refTypeName)}
+					}
 				} else {
-					respSchema.Ref = fmt.Sprintf("#/definitions/%s", route.ResponseType.Name())
+					tempKind := swaggerMapTypes[strings.ReplaceAll(route.ResponseType.Name(), "[]", "")]
+					ftype, format, ok := primitiveSchema(tempKind, route.ResponseType.Name())
+					if ok {
+						respSchema.Type = ftype
+						respSchema.Format = format
+					} else {
+						respSchema.Ref = fmt.Sprintf("#/definitions/%s", route.ResponseType.Name())
+					}
 				}
 			}
-			tags := service.Name
+			var tags []string
 			if value := group.GetAnnotation("group"); len(value) > 0 {
-				tags = value
+				inn := strings.Split(value, ",")
+				tags = append(tags, inn...)
 			}
 
 			if value := group.GetAnnotation("swtags"); len(value) > 0 {
-				tags = value
+				inn := strings.Split(value, ",")
+				tags = append(tags, inn...)
 			}
-
+			if value := group.GetAnnotation("x_tags"); len(value) > 0 {
+				inn := strings.Split(value, ",")
+				tags = append(tags, inn...)
+			}
+			if route.AtDoc.Properties != nil {
+				val, _ := strconv.Unquote(route.AtDoc.Properties["x_tags"])
+				if val != "" {
+					inn := strings.Split(val, ",")
+					tags = append(tags, inn...)
+				}
+			}
+			//respSchema
 			operationObject := &swaggerOperationObject{
-				Tags:       []string{tags},
+				Tags:       tags,
 				Parameters: parameters,
 				Responses: swaggerResponsesObject{
 					"200": swaggerResponseObject{
 						Description: desc,
 						Schema: swaggerSchemaObject{
-							schemaCore: respSchema,
+							schemaCore: schemaCore{
+								Type: "object",
+							},
+							Properties: &swaggerSchemaObjectProperties{
+								{
+									Key: "code",
+									Value: &swaggerSchemaObject{
+										schemaCore: schemaCore{
+											Type:    "integer",
+											Format:  "int32",
+											Example: "0",
+											Default: "",
+										},
+										Description: "错误码 0为成功",
+										Title:       "错误码",
+										ExternalDocs: &swaggerExternalDocumentationObject{
+											Description: "错误码表",
+											URL:         "https://jumpw-mini.apifox.cn/error-code-table",
+										},
+										ReadOnly: true,
+									},
+								},
+								{
+									Key: "msg",
+									Value: &swaggerSchemaObject{
+										schemaCore: schemaCore{
+											Type:    "string",
+											Format:  "",
+											Example: "",
+											Default: "",
+										},
+										Description: "错误信息",
+										Title:       "错误信息",
+										ExternalDocs: &swaggerExternalDocumentationObject{
+											Description: "错误码表",
+											URL:         "https://jumpw-mini.apifox.cn/error-code-table",
+										},
+										ReadOnly: true,
+									},
+								}, {
+									Key: "data",
+									Value: &swaggerSchemaObject{
+										schemaCore: respSchema,
+									},
+								},
+							},
+							Description: "返回结构",
+							Title:       "返回结构",
 						},
 					},
 				},
@@ -316,12 +393,13 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				rPower     = ""
 			)
 			if route.AtDoc.Properties != nil {
-				rFolder = route.AtDoc.Properties["x_folder"]
-				rStatus = route.AtDoc.Properties["x_status"]
-				rSourceUrl = route.AtDoc.Properties["x_source_url"]
-				rPower = route.AtDoc.Properties["x_power"]
+				rFolder, _ = strconv.Unquote(route.AtDoc.Properties["x_folder"])
+				rStatus, _ = strconv.Unquote(route.AtDoc.Properties["x_status"])
+				rSourceUrl, _ = strconv.Unquote(route.AtDoc.Properties["x_source_url"])
+				rPower, _ = strconv.Unquote(route.AtDoc.Properties["x_power"])
 			}
-			operationObject.XApifoxPower = gfolder + "/" + rFolder
+			folder := gfolder + "/" + rFolder
+			operationObject.XApifoxFolder = strings.Trim(folder, "/")
 			operationObject.XApifoxStatus = rStatus
 			operationObject.XApifoxSourceurl = rSourceUrl
 			operationObject.XApifoxPower = rPower
@@ -633,7 +711,22 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 			case strings.HasPrefix(option, optionsOption):
 				segs := strings.SplitN(option, equalToken, 2)
 				if len(segs) == 2 {
-					ret.Enum = strings.Split(segs[1], optionSeparator)
+					enum := strings.Split(segs[1], optionSeparator)
+					for _, v := range enum {
+						if strings.Contains(v, ":") {
+							ee := strings.Split(v, ":")
+							if len(ee) == 2 {
+								ret.Enum = append(ret.Enum, ee[0])
+								ret.XEnum = append(ret.XEnum, XApifoxEnum{
+									Value:       ee[0],
+									Name:        ee[0],
+									Description: ee[1],
+								})
+							}
+						} else {
+							ret.Enum = append(ret.Enum, v)
+						}
+					}
 				}
 			case strings.HasPrefix(option, rangeOption):
 				segs := strings.SplitN(option, equalToken, 2)
@@ -660,9 +753,9 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 func primitiveSchema(kind reflect.Kind, t string) (ftype, format string, ok bool) {
 	switch kind {
 	case reflect.Int:
-		return "integer", "int32", true
+		return "integer", "int64", true
 	case reflect.Uint:
-		return "integer", "uint32", true
+		return "integer", "uint64", true
 	case reflect.Int8:
 		return "integer", "int8", true
 	case reflect.Uint8:
