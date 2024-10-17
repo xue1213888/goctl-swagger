@@ -320,7 +320,9 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 								}, {
 									Key: "data",
 									Value: &swaggerSchemaObject{
-										schemaCore: respSchema,
+										schemaCore:  respSchema,
+										Description: "返回数据",
+										Title:       "返回数据",
 									},
 								},
 							},
